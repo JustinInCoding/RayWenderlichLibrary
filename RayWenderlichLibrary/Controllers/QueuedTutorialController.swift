@@ -58,7 +58,8 @@ class QueuedTutorialController: UIViewController {
     navigationItem.leftBarButtonItem = editButtonItem
     navigationItem.rightBarButtonItem = nil
     
-    
+		let tutorials = DataSource.shared.tutorials
+		print(tutorials)
   }
 }
 

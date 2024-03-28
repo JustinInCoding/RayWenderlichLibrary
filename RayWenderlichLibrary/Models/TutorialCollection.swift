@@ -35,7 +35,21 @@
 
 import Foundation
 
-struct TutorialCollection {
+struct TutorialCollection: Decodable, Hashable, Equatable {
   let title: String
   let tutorials: [Tutorial]
+	let identifier = UUID().uuidString
+	
+	private enum CodingKeys: String, CodingKey {
+		case title
+		case tutorials
+	}
+	
+	func hash(into hasher: inout Hasher) {
+		hasher.combine(identifier)
+	}
+	
+	static func ==(lhs: TutorialCollection, rhs: TutorialCollection) -> Bool {
+		return lhs.identifier == rhs.identifier
+	}
 }
