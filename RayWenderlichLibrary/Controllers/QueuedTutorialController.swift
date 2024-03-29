@@ -37,6 +37,10 @@ import UIKit
 
 class QueuedTutorialController: UIViewController {
 
+	enum Section {
+		case main
+	}
+	
   lazy var dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "MMM d"
@@ -47,6 +51,8 @@ class QueuedTutorialController: UIViewController {
   @IBOutlet var updateButton: UIBarButtonItem!
   @IBOutlet var applyUpdatesButton: UIBarButtonItem!
   @IBOutlet weak var collectionView: UICollectionView!
+	
+	private var dataSource: UICollectionViewDiffableDataSource<Section, Tutorial>!
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -58,9 +64,15 @@ class QueuedTutorialController: UIViewController {
     navigationItem.leftBarButtonItem = editButtonItem
     navigationItem.rightBarButtonItem = nil
     
-		let tutorials = DataSource.shared.tutorials
-		print(tutorials)
+		collectionView.collectionViewLayout = configureCollectionViewLayout()
+		configureDataSource()
+		
   }
+	
+	override func viewWillAppear(_ animated: Bool) {
+		super.viewWillAppear(animated)
+		configureSnapshot()
+	}
 }
 
 // MARK: - Queue Events -
@@ -98,4 +110,51 @@ extension QueuedTutorialController {
 
   @IBAction func applyUpdates() {
   }
+}
+
+// MARK: - Collection View -
+
+extension QueuedTutorialController {
+	func configureCollectionViewLayout() -> UICollectionViewCompositionalLayout {
+		let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0))
+		let item = NSCollectionLayoutItem(layoutSize: itemSize)
+		item.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
+		
+		let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(148))
+		let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+		
+		let section = NSCollectionLayoutSection(group: group)
+		return UICollectionViewCompositionalLayout(section: section)
+	}
+}
+
+// MARK: - Diffable Data Source -
+
+extension QueuedTutorialController {
+	func configureDataSource() {
+		dataSource = UICollectionViewDiffableDataSource<Section, Tutorial>(collectionView: collectionView) { (collectionView: UICollectionView, indexPath: IndexPath, tutorial: Tutorial) -> UICollectionViewCell? in
+			
+			guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: QueueCell.reuseIdentifier, for: indexPath) as? QueueCell else {
+				return nil
+			}
+			
+			cell.titleLabel.text = tutorial.title
+			cell.thumbnailImageView.image = tutorial.image
+			cell.thumbnailImageView.backgroundColor = tutorial.imageBackgroundColor
+			cell.publishDateLabel.text = tutorial.formattedDate(using: self.dateFormatter)
+			
+			return cell
+			
+		}
+	}
+	
+	func configureSnapshot() {
+		var snapshot = NSDiffableDataSourceSnapshot<Section, Tutorial>()
+		snapshot.appendSections([.main])
+		
+		let queuedTutorials = DataSource.shared.tutorials.flatMap({ $0.queuedTutorials })
+		snapshot.appendItems(queuedTutorials)
+		
+		dataSource.apply(snapshot, animatingDifferences: true)
+	}
 }

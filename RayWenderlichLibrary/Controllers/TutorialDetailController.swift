@@ -88,6 +88,8 @@ final class TutorialDetailViewController: UIViewController {
   }
   
   @IBAction func toggleQueued() {
+		tutorial.isQueued.toggle()
+		
     UIView.performWithoutAnimation {
       if tutorial.isQueued {
         queueButton.setTitle("Remove from queue", for: .normal)
@@ -113,11 +115,11 @@ extension TutorialDetailViewController {
 			let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
 			
 			let section = NSCollectionLayoutSection(group: group)
-			section.orthogonalScrollingBehavior = .continuous
+			section.orthogonalScrollingBehavior = .none // 仅横向滑动会生效，垂直滑动不用设置该属性，会破坏布局
 			section.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 20, trailing: 10)
 			
 			let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(44.0))
-			let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize, elementKind: UICollectionView.elementKindSectionHeader, alignment: .topLeading)
+			let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize, elementKind: UICollectionView.elementKindSectionHeader, alignment: .top)
 			section.boundarySupplementaryItems = [sectionHeader]
 			
 			return section
