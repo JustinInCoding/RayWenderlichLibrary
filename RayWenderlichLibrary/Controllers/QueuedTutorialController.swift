@@ -101,7 +101,25 @@ extension QueuedTutorialController {
   }
 
   @IBAction func deleteSelectedItems() {
-
+		guard let selectedIndexPaths = collectionView.indexPathsForSelectedItems else {
+			return
+		}
+		
+		let tutorials = selectedIndexPaths.compactMap({ dataSource.itemIdentifier(for: $0) })
+		
+		// Get all of the tutorials in the data source that are currently queued
+		let queuedTutorials = DataSource.shared.tutorials.flatMap { $0.queuedTutorials }
+		// Find the queued tutorials that will be deleted from the collection view
+		let tutorialsToUnqueue = Set(tutorials).intersection(queuedTutorials)
+		// Set the `isQueued` property to false for each matching tutorial
+		tutorialsToUnqueue.forEach { $0.isQueued = false }
+		
+		var currentSnapshot = dataSource.snapshot()
+		currentSnapshot.deleteItems(tutorials)
+		
+		dataSource.apply(currentSnapshot, animatingDifferences: true)
+		
+		isEditing.toggle()
   }
 
   @IBAction func triggerUpdates() {
