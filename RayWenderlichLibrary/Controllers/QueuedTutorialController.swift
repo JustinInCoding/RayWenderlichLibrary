@@ -53,6 +53,8 @@ class QueuedTutorialController: UIViewController {
   @IBOutlet var applyUpdatesButton: UIBarButtonItem!
   @IBOutlet weak var collectionView: UICollectionView!
 	
+	private var timer: Timer?
+	
 	private var dataSource: UICollectionViewDiffableDataSource<Section, Tutorial>!
 
   override func viewDidLoad() {
@@ -70,6 +72,20 @@ class QueuedTutorialController: UIViewController {
 		configureDataSource()
 		
   }
+	
+	override func viewDidAppear(_ animated: Bool) {
+		super.viewDidAppear(animated)
+		
+		timer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true, block: { [weak self] _ in
+			guard let self = self else { return }
+			self.triggerUpdates()
+			
+			DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) { [weak self] in
+				guard let self = self else { return }
+				self.applyUpdates()
+			}
+		})
+	}
 	
 	override func viewWillAppear(_ animated: Bool) {
 		super.viewWillAppear(animated)
@@ -137,6 +153,27 @@ extension QueuedTutorialController {
   }
 
   @IBAction func applyUpdates() {
+		let tutorials = dataSource.snapshot().itemIdentifiers
+		if var firstTutorial = tutorials.first, tutorials.count > 1 {
+			let tutorialsWithUpdates = tutorials.filter({ $0.updateCount > 0 })
+			
+			var currentSnapshot = dataSource.snapshot()
+			tutorialsWithUpdates.forEach { tutorial in
+				if tutorial != firstTutorial {
+					currentSnapshot.moveItem(tutorial, beforeItem: firstTutorial)
+					firstTutorial = tutorial
+					tutorial.updateCount = 0
+				}
+				
+				if let indexPath = dataSource.indexPath(for: tutorial) {
+					let badgeView = collectionView.supplementaryView(forElementKind: QueuedTutorialController.badgeElementKind, at: indexPath)
+					badgeView?.isHidden = true
+				}
+						
+			}
+			
+			dataSource.apply(currentSnapshot, animatingDifferences: true)
+		}
   }
 }
 
