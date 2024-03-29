@@ -39,6 +39,8 @@ import UIKit
 final class LibraryController: UIViewController {
   
   @IBOutlet weak var collectionView: UICollectionView!
+	private var dataSource: UICollectionViewDiffableDataSource<TutorialCollection, Tutorial>!
+	private let tutorialCollections = DataSource.shared.tutorials
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -47,9 +49,13 @@ final class LibraryController: UIViewController {
   
   private func setupView() {
     self.title = "Library"
-		configureCollectionViewLayout()
+		collectionView.collectionViewLayout = configureCollectionViewLayout()
+		configureDataSource()
+		configureSnapshot()
   }
 }
+
+// MARK: - collection view compositional layout
 
 extension LibraryController {
 
@@ -65,7 +71,7 @@ extension LibraryController {
 			let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
 			
 			let section = NSCollectionLayoutSection(group: group)
-			section.orthogonalScrollingBehavior = .continuous
+			section.orthogonalScrollingBehavior = .groupPaging
 			section.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10)
 			section.interGroupSpacing = 10
 			
@@ -75,6 +81,37 @@ extension LibraryController {
 		return UICollectionViewCompositionalLayout(sectionProvider: sectionProvidier)
 	}
 	
+}
+
+// MARK: - Diffable data source
+
+extension LibraryController {
+	typealias TutorialDataSource = UICollectionViewDiffableDataSource<TutorialCollection, Tutorial>
+	func configureDataSource() {
+		dataSource = TutorialDataSource(collectionView: collectionView) { (collectionView: UICollectionView, indexPath: IndexPath, tutorial: Tutorial) -> UICollectionViewCell? in
+			
+			guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TutorialCell.reuseIdentifier, for: indexPath) as? TutorialCell else {
+				return nil
+			}
+			
+			cell.titleLabel.text = tutorial.title
+			cell.thumbnailImageView.image = tutorial.image
+			cell.thumbnailImageView.backgroundColor = tutorial.imageBackgroundColor
+			
+			return cell
+			
+		}
+	}
 	
+	func configureSnapshot() {
+		var currentSnapshot = NSDiffableDataSourceSnapshot<TutorialCollection, Tutorial>()
+		
+		tutorialCollections.forEach { collection in
+			currentSnapshot.appendSections([collection])
+			currentSnapshot.appendItems(collection.tutorials)
+		}
+		
+		dataSource.apply(currentSnapshot, animatingDifferences: false)
+	}
 	
 }
